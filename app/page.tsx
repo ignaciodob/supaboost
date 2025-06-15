@@ -96,6 +96,11 @@ export default function Home() {
     console.log(options);
   }
 
+  const skipQuestion = async () => {
+    if (!user) return;
+    fetchQuestion();
+  }
+
   useEffect(() => {
     fetchQuestion();
   }, [user?.id]);
@@ -128,6 +133,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!user) return;
+    getVotes();
     // Set up polling
     const interval = setInterval(() => {
       getVotes();
@@ -169,7 +175,7 @@ export default function Home() {
         >
           <div className="flex items-center gap-2 bg-white/90 text-[#a020f0] font-bold text-lg px-6 py-2 rounded-full shadow-lg border border-[#a020f0] cursor-pointer transition-all hover:bg-[#a020f0]/90 hover:text-white hover:border-white hover:scale-105">
             <span className="text-xl">🎉</span>
-            <span>You've been picked {votes.length} times!</span>
+            <span>You've been boosted {votes.length} times!</span>
           </div>
         </button>
       )}
@@ -180,7 +186,7 @@ export default function Home() {
           <div className="bg-[#a020f0] rounded-2xl w-full max-w-md mx-4 overflow-hidden">
             <div className="p-6 border-b border-white/20">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-white">You've been picked {votes.length} times!</h2>
+                <h2 className="text-2xl font-bold text-white">You've been boosted {votes.length} times!</h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
                   className="text-white/80 hover:text-white"
@@ -243,10 +249,10 @@ export default function Home() {
 
       {/* Action Buttons */}
       <div className="flex items-center justify-center gap-8 mt-6">
-        <button className="text-white/70 hover:text-white text-sm font-medium transition-colors" onClick={shufflePeople}>
+        <button className="text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer" onClick={shufflePeople}>
           Shuffle
         </button>
-        <button className="text-white/70 hover:text-white text-sm font-medium transition-colors">
+        <button className="text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer" onClick={skipQuestion}>
           Skip
         </button>
       </div>
