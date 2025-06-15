@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface Person {
   id: string;
@@ -17,19 +19,33 @@ interface Question {
   people: Person[];
 }
 
-
+interface Vote {
+ question_text: string,
+ emoji: string,
+}
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
   const [options, setOptions] = useState<string[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const router = useRouter();
 
 
+  const linkUserToPerson = async () => {
+    const { data, error } = await supabase.rpc('link_current_user_to_person');
+    if (error) {
+      console.error('Error linking user to person:', error);
+    }
+    return data;
+  }
+  
   useEffect(() => {
+
     // Check active sessions and sets the user
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -41,6 +57,9 @@ export default function Home() {
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        linkUserToPerson();
+      }
       if (!session?.user) {
         router.push('/login');
       }
@@ -92,6 +111,25 @@ export default function Home() {
     }
   };
 
+  const getVotes = async () => {
+    const { data, error } = await supabase.rpc('get_votes_received');
+    if (data) {
+      setVotes(data);
+    } else {
+      setVotes([]);
+    }
+  }
+
+  useEffect(() => {
+    if (!user) return;
+    // Set up polling
+    const interval = setInterval(() => {
+      getVotes();
+    }, 5000);
+    // Clean up on unmount or user change
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
   if (!user) {
     return null;
   }
@@ -99,6 +137,8 @@ export default function Home() {
   if (error) {
     return <div>Error: {error}</div>;
   }
+
+
 
   const personButton = (person: Person, index: number) => {
     return (
@@ -114,8 +154,69 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
-      <div className="w-full max-w-xs aspect-[9/16] bg-[#a020f0] rounded-[2.5rem] shadow-2xl flex flex-col items-center justify-center p-0 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-black">
+      {/* Banner */}
+      {votes.length > 0 && (
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="mb-6"
+        >
+          <div className="flex items-center gap-2 bg-white/90 text-[#a020f0] font-bold text-lg px-6 py-2 rounded-full shadow-lg border border-[#a020f0] cursor-pointer transition-all hover:bg-[#a020f0]/90 hover:text-white hover:border-white hover:scale-105">
+            <span className="text-xl">🎉</span>
+            <span>You've been picked {votes.length} times!</span>
+          </div>
+        </button>
+      )}
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#a020f0] rounded-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div className="p-6 border-b border-white/20">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-white">You've been picked {votes.length} times!</h2>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-white/80 hover:text-white"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div className="max-h-[60vh] overflow-y-auto">
+              {votes.map((vote, index) => (
+                <div key={index} className="p-4 border-b border-white/20 last:border-b-0">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{vote.emoji}</span>
+                      <div>
+                        <p className="font-medium text-white">{vote.question_text}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="absolute top-6 right-6 z-30">
+        <button
+          onClick={async () => {
+            if (window.confirm('Are you sure you want to log out?')) {
+              await handleSignOut();
+            }
+          }}
+          className="px-2 py-1 text-sm text-[#a020f0] bg-transparent hover:underline hover:text-white transition-all font-medium"
+          aria-label="Log out"
+        >
+          Sign out
+        </button>
+      </div>
+      <div className="relative w-full max-w-xs aspect-[9/16] bg-[#a020f0] rounded-[2.5rem] shadow-2xl flex flex-col items-center justify-center p-0">
         {/* Emoji */}
         <div className="flex flex-col items-center justify-center flex-1 w-full mt-10">
           <span className="text-7xl mb-8">{question?.emoji}</span>
@@ -127,7 +228,7 @@ export default function Home() {
         <div className="w-full px-6 pb-10 flex flex-col gap-4">
           <div className="flex gap-4 mb-4">
             {question?.people.slice(0, 2).map((person: Person, index: number) => personButton(person, index))}
-          </div>
+          </div>  
           <div className="flex gap-4">
             {question?.people.slice(2).map((person: Person, index: number) => personButton(person, index))}
           </div>
