@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
+import ConfettiExplosion from 'react-confetti-explosion';
 
 interface Person {
   id: string;
@@ -31,6 +32,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [hasShownConfetti, setHasShownConfetti] = useState<boolean>(false);
   const router = useRouter();
 
 
@@ -90,10 +92,11 @@ export default function Home() {
 
   const shufflePeople = async () => {
     if (!user) return;
+    setIsLoading(true);
     const { data, error } = await supabase.rpc('get_random_people', { uid: user.id });
     if (error) setError(error.message);
     setOptions(data.map((row: any) => row as Person));
-    console.log(options);
+    setIsLoading(false);
   }
 
   const skipQuestion = async () => {
@@ -160,7 +163,7 @@ export default function Home() {
         onClick={() => handleVote(person)}
         disabled={!!selectedOption || isLoading}
       >
-        {person.name}
+        {isLoading ? '...' : person.name}
       </button>
     )
   }
@@ -183,7 +186,17 @@ export default function Home() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#a020f0] rounded-2xl w-full max-w-md mx-4 overflow-hidden">
+          <div className="bg-[#a020f0] rounded-2xl w-full max-w-md mx-4 overflow-hidden relative">
+            {!hasShownConfetti && (
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-[100]">
+                <ConfettiExplosion
+                  onComplete={() => setHasShownConfetti(true)}
+                  duration={3000}
+                  particleCount={300}
+                  colors={['#ffffff', '#a020f0', '#ffd700']}
+                />
+              </div>
+            )}
             <div className="p-6 border-b border-white/20">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-white">You've been boosted {votes.length} times!</h2>
