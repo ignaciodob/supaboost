@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import Link from 'next/link';
 
 interface Person {
   id: string;
@@ -27,7 +25,7 @@ interface Vote {
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [question, setQuestion] = useState<Question | null>(null);
-  const [options, setOptions] = useState<string[]>([]);
+  const [options, setOptions] = useState<Person[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -84,11 +82,19 @@ export default function Home() {
     const { data, error } = await supabase.rpc('get_question_with_random_people', { uid: user.id });
     if (data && data.length > 0) {
       setQuestion(data[0] as Question);
-      setOptions(data.map((row: any) => row.person_name));
+      setOptions(data[0].people.map((row: any) => row as Person));
     }
     if (error) setError(error.message);
     setIsLoading(false);
   };
+
+  const shufflePeople = async () => {
+    if (!user) return;
+    const { data, error } = await supabase.rpc('get_random_people', { uid: user.id });
+    if (error) setError(error.message);
+    setOptions(data.map((row: any) => row as Person));
+    console.log(options);
+  }
 
   useEffect(() => {
     fetchQuestion();
@@ -140,7 +146,7 @@ export default function Home() {
 
 
 
-  const personButton = (person: Person, index: number) => {
+  const personButton = (person: Person) => {
     return (
       <button
         key={person.id}
@@ -227,12 +233,22 @@ export default function Home() {
         {/* Options */}
         <div className="w-full px-6 pb-10 flex flex-col gap-4">
           <div className="flex gap-4 mb-4">
-            {question?.people.slice(0, 2).map((person: Person, index: number) => personButton(person, index))}
+            {options?.slice(0, 2).map((person: Person) => personButton(person))}
           </div>  
           <div className="flex gap-4">
-            {question?.people.slice(2).map((person: Person, index: number) => personButton(person, index))}
+            {options?.slice(2).map((person: Person) => personButton(person))}
           </div>
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-center justify-center gap-8 mt-6">
+        <button className="text-white/70 hover:text-white text-sm font-medium transition-colors" onClick={shufflePeople}>
+          Shuffle
+        </button>
+        <button className="text-white/70 hover:text-white text-sm font-medium transition-colors">
+          Skip
+        </button>
       </div>
     </div>
   );
