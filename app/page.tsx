@@ -228,7 +228,14 @@ export default function Home() {
         </div>
       )}
 
-      <div className="absolute top-6 right-6 z-30">
+      <div className="absolute top-6 right-6 z-30 flex gap-4">
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="px-2 py-1 text-sm text-[#a020f0] bg-transparent hover:underline hover:text-white transition-all font-medium"
+          aria-label="Go to dashboard"
+        >
+          Dashboard
+        </button>
         <button
           onClick={async () => {
             if (window.confirm('Are you sure you want to log out?')) {
