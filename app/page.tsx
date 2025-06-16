@@ -163,7 +163,7 @@ export default function Home() {
         onClick={() => handleVote(person)}
         disabled={!!selectedOption || isLoading}
       >
-        {isLoading ? '...' : person.name}
+        {person.name}
       </button>
     )
   }
