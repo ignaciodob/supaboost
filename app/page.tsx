@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { User } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
 import ConfettiExplosion from 'react-confetti-explosion';
+import { useAuth } from './providers';
 
 interface Person {
   id: string;
@@ -13,18 +13,22 @@ interface Person {
 
 interface Question {
   id: string;
-  emoji: string;
   text: string;
+  emoji: string;
   people: Person[];
 }
 
 interface Vote {
- question_text: string,
- emoji: string,
+  id: string;
+  person_id: string;
+  question_id: string;
+  created_at: string;
+  question_text: string;
+  emoji: string;
 }
 
 export default function Home() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, loading: authLoading } = useAuth();
   const [question, setQuestion] = useState<Question | null>(null);
   const [options, setOptions] = useState<Person[]>([]);
   const [votes, setVotes] = useState<Vote[]>([]);
@@ -34,7 +38,6 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [hasShownConfetti, setHasShownConfetti] = useState<boolean>(false);
   const router = useRouter();
-
 
   const linkUserToPerson = async () => {
     try {
@@ -60,37 +63,12 @@ export default function Home() {
   }
   
   useEffect(() => {
-
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (!session?.user) {
-        router.push('/login');
-      }
-    });
-
-    // Listen for changes on auth state (logged in, signed out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await linkUserToPerson();
-      }
-      if (!session?.user) {
-        router.push('/login');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [router]);
-
-  const handleSignOut = async () => {
-    try {
-      await supabase.auth.signOut();
+    if (!user) {
       router.push('/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
+    } else {
+      linkUserToPerson();
     }
-  };
+  }, [user, router]);
 
   const fetchQuestion = async () => {
     if (!user) return;
@@ -120,7 +98,9 @@ export default function Home() {
   }
 
   useEffect(() => {
-    fetchQuestion();
+    if (user) {
+      fetchQuestion();
+    }
   }, [user?.id]);
 
   const handleVote = async (person: Person) => {
@@ -160,6 +140,14 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [user?.id]);
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
   if (!user) {
     return null;
   }
@@ -167,8 +155,6 @@ export default function Home() {
   if (error) {
     return <div>Error: {error}</div>;
   }
-
-
 
   const personButton = (person: Person) => {
     return (
@@ -254,7 +240,7 @@ export default function Home() {
         <button
           onClick={async () => {
             if (window.confirm('Are you sure you want to log out?')) {
-              await handleSignOut();
+              await supabase.auth.signOut();
             }
           }}
           className="px-2 py-1 text-sm text-[#a020f0] bg-transparent hover:underline hover:text-white transition-all font-medium"

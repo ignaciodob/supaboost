@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { useAuth } from '../providers';
 
 interface Stats {
   boostedUsers: number;
@@ -20,6 +21,7 @@ interface Stats {
 }
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -65,37 +67,61 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
     fetchStats();
 
-    // Subscribe to realtime changes on the votes table
-    const channel = supabase
-      .channel('votes-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'votes'
-        },
-        (payload) => {
-          console.log('New vote received:', payload);
-          fetchStats();
-        }
-      )
-      .subscribe();
+    let channel: RealtimeChannel | null = null;
+
+    const setupRealtimeSubscription = async () => {
+      try {
+        channel = supabase
+          .channel('votes-changes')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'votes'
+            },
+            (payload) => {
+              console.log('New vote received:', payload);
+              fetchStats();
+            }
+          )
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              console.log('Successfully subscribed to votes changes');
+            }
+          });
+      } catch (error) {
+        console.error('Error setting up realtime subscription:', error);
+      }
+    };
+
+    setupRealtimeSubscription();
 
     // Cleanup subscription on unmount
     return () => {
-      channel.unsubscribe();
+      if (channel) {
+        channel.unsubscribe();
+      }
     };
-  }, []);
+  }, [user, router]);
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-white text-xl">Loading...</div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
