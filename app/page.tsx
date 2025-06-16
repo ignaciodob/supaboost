@@ -37,11 +37,26 @@ export default function Home() {
 
 
   const linkUserToPerson = async () => {
-    const { data, error } = await supabase.rpc('link_current_user_to_person');
-    if (error) {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/link-user-to-person`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to link user to person');
+      }
+
+      return await response.json();
+    } catch (error) {
       console.error('Error linking user to person:', error);
+      router.push('/error');
+      return null;
     }
-    return data;
   }
   
   useEffect(() => {
@@ -55,10 +70,10 @@ export default function Home() {
     });
 
     // Listen for changes on auth state (logged in, signed out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        linkUserToPerson();
+        await linkUserToPerson();
       }
       if (!session?.user) {
         router.push('/login');
