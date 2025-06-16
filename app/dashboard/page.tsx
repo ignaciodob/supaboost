@@ -8,7 +8,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 interface Stats {
   boostedUsers: number;
   totalBoosts: number;
-  averageBoosts: number;
+  boostCoverage: number;
   leaderboard: Array<{
     person_id: string;
     total_votes: number;
@@ -34,9 +34,9 @@ export default function DashboardPage() {
       const { data: totalBoosts, error: totalBoostsError } = await supabase
         .rpc('get_total_boosts');
 
-      // Get average boosts per person
-      const { data: averageBoosts, error: averageBoostsError } = await supabase
-        .rpc('get_average_boosts');
+      // Get boost coverage
+      const { data: boostCoverage, error: boostCoverageError } = await supabase
+        .rpc('get_boost_coverage');
 
       // Get leaderboard
       const { data: leaderboard, error: leaderboardError } = await supabase
@@ -46,14 +46,14 @@ export default function DashboardPage() {
       const { data: topBoosters, error: topBoostersError } = await supabase
         .rpc('get_top_boosters');
 
-      if (boostedUsersError || totalBoostsError || leaderboardError || averageBoostsError || topBoostersError) {
+      if (boostedUsersError || totalBoostsError || leaderboardError || boostCoverageError || topBoostersError) {
         throw new Error('Failed to fetch stats');
       }
 
       setStats({
         boostedUsers: boostedUsers || 0,
         totalBoosts: totalBoosts || 0,
-        averageBoosts: averageBoosts || 0,
+        boostCoverage: boostCoverage || 0,
         leaderboard: leaderboard || [],
         topBoosters: topBoosters || [],
       });
@@ -99,68 +99,79 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black p-8">
+    <div className="min-h-screen bg-gradient-to-br from-black to-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-12">
           <h1 className="text-4xl font-bold text-white">Dashboard</h1>
           <button
             onClick={() => router.push('/')}
-            className="px-4 py-2 text-[#a020f0] bg-white rounded-lg hover:bg-white/90 transition-colors"
+            className="px-6 py-3 text-[#a020f0] bg-white rounded-xl hover:bg-white/90 transition-all duration-300 shadow-lg hover:shadow-xl"
           >
             Back to boosting
           </button>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-[#a020f0] rounded-2xl p-6 shadow-xl">
-            <h3 className="text-white/70 text-lg mb-2">Boosted Supatroopers</h3>
-            <p className="text-4xl font-bold text-white">{stats?.boostedUsers || 0}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div className="bg-gradient-to-br from-[#a020f0] to-[#8a1cd0] rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <h3 className="text-white/80 text-lg mb-3">🚀 Boosted Supatroopers</h3>
+            <p className="text-5xl font-bold text-white">{stats?.boostedUsers || 0}</p>
           </div>
-          <div className="bg-[#a020f0] rounded-2xl p-6 shadow-xl">
-            <h3 className="text-white/70 text-lg mb-2">Total Boosts Given</h3>
-            <p className="text-4xl font-bold text-white">{stats?.totalBoosts || 0}</p>
+          <div className="bg-gradient-to-br from-[#a020f0] to-[#8a1cd0] rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <h3 className="text-white/80 text-lg mb-3">⚡ Total Boosts Given</h3>
+            <p className="text-5xl font-bold text-white">{stats?.totalBoosts || 0}</p>
           </div>
-          <div className="bg-[#a020f0] rounded-2xl p-6 shadow-xl">
-            <h3 className="text-white/70 text-lg mb-2">Average Boosts per User</h3>
-            <p className="text-4xl font-bold text-white">{stats?.averageBoosts || 0}</p>
+          <div className="bg-gradient-to-br from-[#a020f0] to-[#8a1cd0] rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <h3 className="text-white/80 text-lg mb-3">🎯 Boost Coverage</h3>
+            <p className="text-5xl font-bold text-white">💚 {stats?.boostCoverage || 0}%</p>
+            <p className="text-white/60 mt-2">of teammates have been picked</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Leaderboard */}
-          <div className="bg-[#a020f0] rounded-2xl p-6 shadow-xl">
-            <h2 className="text-2xl font-bold text-white mb-6">Top 10 Most Boosted</h2>
+          <div className="bg-gradient-to-br from-[#8a1cd0] to-[#6b16a0] rounded-2xl p-8 shadow-xl">
+            <h2 className="text-2xl font-bold text-white mb-8">Top 10 Most Boosted</h2>
             <div className="space-y-4">
               {stats?.leaderboard.map((entry, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between bg-white/10 rounded-lg p-4"
+                  className="flex items-center justify-between bg-white/10 rounded-xl p-4 hover:bg-white/15 transition-all duration-300"
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-white/70 text-lg w-8">{index + 1}</span>
-                    <span className="text-white font-medium">Anonymous User</span>
+                    <span className="text-white font-medium">
+                      {['🚀', '⭐', '🌟', '💫', '✨', '🎯', '🎪', '🎨', '🎭', '🎪'][index]} 
+                      {' '}BoostPal #{index + 1}
+                    </span>
                   </div>
-                  <span className="text-white font-bold">{entry.total_votes} boosts</span>
+                  <span className="text-white font-bold bg-white/20 px-3 py-1 rounded-lg">
+                    {entry.total_votes} boosts
+                  </span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Top Boosters */}
-          <div className="bg-[#a020f0] rounded-2xl p-6 shadow-xl">
-            <h2 className="text-2xl font-bold text-white mb-6">Top 10 Boosters</h2>
+          <div className="bg-gradient-to-br from-[#8a1cd0] to-[#6b16a0] rounded-2xl p-8 shadow-xl">
+            <h2 className="text-2xl font-bold text-white mb-8">Top 10 Boosters</h2>
             <div className="space-y-4">
               {stats?.topBoosters.map((entry, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between bg-white/10 rounded-lg p-4"
+                  className="flex items-center justify-between bg-white/10 rounded-xl p-4 hover:bg-white/15 transition-all duration-300"
                 >
                   <div className="flex items-center gap-4">
                     <span className="text-white/70 text-lg w-8">{index + 1}</span>
-                    <span className="text-white font-medium">Anonymous Booster</span>
+                    <span className="text-white font-medium">
+                      {['🎮', '🎲', '🎯', '🎪', '🎨', '🎭', '🎪', '🎯', '🎲', '🎮'][index]} 
+                      {' '} Supatrooper #{index + 1}
+                    </span>
                   </div>
-                  <span className="text-white font-bold">{entry.total_given} boosts given</span>
+                  <span className="text-white font-bold bg-white/20 px-3 py-1 rounded-lg">
+                    {entry.total_given} boosts
+                  </span>
                 </div>
               ))}
             </div>
