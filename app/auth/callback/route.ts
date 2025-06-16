@@ -13,14 +13,15 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+          async get(name: string) {
+            const cookie = await cookieStore.get(name);
+            return cookie?.value;
           },
-          set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options });
+          async set(name: string, value: string, options: any) {
+            await cookieStore.set({ name, value, ...options });
           },
-          remove(name: string, options: any) {
-            cookieStore.delete(name);
+          async remove(name: string, options: any) {
+            await cookieStore.delete({ name, ...options });
           },
         },
       }
