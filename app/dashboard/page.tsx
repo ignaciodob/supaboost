@@ -168,7 +168,7 @@ export default function DashboardPage() {
                     <span className="text-white/70 text-lg w-8">{index + 1}</span>
                     <span className="text-white font-medium">
                       {['🚀', '⭐', '🌟', '💫', '✨', '🎯', '🎪', '🎨', '🎭', '🎪'][index]} 
-                      {' '}BoostPal #{index + 1}
+                      {' '}Anonymous BoostPal #{index + 1}
                     </span>
                   </div>
                   <span className="text-white font-bold bg-white/20 px-3 py-1 rounded-lg">
@@ -192,7 +192,7 @@ export default function DashboardPage() {
                     <span className="text-white/70 text-lg w-8">{index + 1}</span>
                     <span className="text-white font-medium">
                       {['🎮', '🎲', '🎯', '🎪', '🎨', '🎭', '🎪', '🎯', '🎲', '🎮'][index]} 
-                      {' '} Supatrooper #{index + 1}
+                      {' '}Anonymous Supatrooper #{index + 1}
                     </span>
                   </div>
                   <span className="text-white font-bold bg-white/20 px-3 py-1 rounded-lg">
